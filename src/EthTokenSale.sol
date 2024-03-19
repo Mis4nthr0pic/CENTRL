@@ -16,7 +16,8 @@ contract ETHTokenSale is ReentrancyGuard, Ownable {
     uint256 public start;
     uint256 public end;
     uint256 public totalETHCollected;
-    
+    uint256 public totalTokensSold;
+
     // Metrics
     mapping(address => uint256) public tokensPurchased;
 
@@ -48,6 +49,7 @@ contract ETHTokenSale is ReentrancyGuard, Ownable {
         tokensPurchased[msg.sender] += tokensToTransfer;
 
         totalETHCollected += msg.value;
+        totalTokensSold += tokensToTransfer;
     }
 
     function claimTokens() external nonReentrant {
@@ -74,8 +76,4 @@ contract ETHTokenSale is ReentrancyGuard, Ownable {
         token.safeTransfer(owner(), balance);
     }
 
-     // Function to get sale metrics
-     function getSaleMetrics() external view returns (uint256, uint256) {
-        return (totalETHCollected, totalTokensSold);
-    }
 }
