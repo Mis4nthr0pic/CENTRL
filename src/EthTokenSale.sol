@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./Whitelist.sol";
 
-contract ETHTokenSale is ReentrancyGuard, Ownable {
+contract ETHTokenSale is ReentrancyGuard, Ownable, Whitelist {
     using SafeERC20 for ERC20;
 
     ERC20 public saleToken;
@@ -34,6 +35,8 @@ contract ETHTokenSale is ReentrancyGuard, Ownable {
     //should we accept eth straight into the contract?
     //set total tokens
     //where do we control whitelist behaviour
+    //max buy, min buy?
+    //remove all whitelisting at once?
 
     constructor(
         ERC20 _saleToken,
