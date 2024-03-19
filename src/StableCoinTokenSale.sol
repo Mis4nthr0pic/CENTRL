@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StablecoinTokenSale is ReentrancyGuard, Ownable {
+abstract contract StablecoinTokenSale is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public saleToken;
@@ -24,15 +24,13 @@ contract StablecoinTokenSale is ReentrancyGuard, Ownable {
         IERC20 _saleToken,
         IERC20 _paymentToken,
         uint256 _rate,
-        uint256 _duration,
-        address _owner
+        uint256 _duration
     ) {
         saleToken = _saleToken;
         paymentToken = _paymentToken;
         rate = _rate; // Ensure this rate already considers the token's decimals
         start = block.timestamp;
         end = start + _duration;
-        transferOwnership(_owner);
         saleActive = true;
     }
 
@@ -41,7 +39,7 @@ contract StablecoinTokenSale is ReentrancyGuard, Ownable {
         require(block.timestamp >= start && block.timestamp <= end, "Sale period has ended");
         require(paymentTokenAmount > 0, "No payment token sent");
 
-        uint256 tokenAmount = paymentTokenAmount * rate / (10**paymentToken.decimals()) * (10**saleToken.decimals());
+        uint256 tokenAmount = paymentTokenAmount * rate / (10 ** IERC20Metadata(paymentToken).decimals()) * (10 ** IERC20Metadata(saleToken).decimals());
         tokensPurchased[msg.sender] += tokenAmount; // Update claimable amount
 
         paymentToken.safeTransferFrom(msg.sender, address(this), paymentTokenAmount);

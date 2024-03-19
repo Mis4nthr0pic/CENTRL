@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./ETHTokenSale.sol";
-import "./StablecoinTokenSale.sol";
+import './ETHTokenSale.sol'; 
 
-contract TokenSaleFactory is Ownable {
+contract SaleFactory is Ownable {
     // Keeping a record of all sales
     address[] public allSales;
 
     event SaleCreated(address indexed saleContract, string saleType);
 
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
     // Function to create a new ETHTokenSale
     function createETHTokenSale(
-        IERC20 saleToken,
+        ERC20 saleToken,
         uint256 rate,
         uint256 duration,
+        uint256 softcap,
+        uint256 hardcap,
         address owner
     ) external onlyOwner {
         ETHTokenSale newSale = new ETHTokenSale(saleToken, rate, duration, owner);
@@ -23,6 +27,7 @@ contract TokenSaleFactory is Ownable {
         emit SaleCreated(address(newSale), "ETH");
     }
 
+    /*
     // Function to create a new StablecoinTokenSale
     function createStablecoinTokenSale(
         IERC20 saleToken,
@@ -35,6 +40,6 @@ contract TokenSaleFactory is Ownable {
         allSales.push(address(newSale));
         emit SaleCreated(address(newSale), "Stablecoin");
     }
-
+        */
     // Additional factory management functions as needed...
 }
