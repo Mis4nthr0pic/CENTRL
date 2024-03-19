@@ -10,13 +10,13 @@ contract ETHTokenSale is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public saleToken;
+    bool public saleActive;
+    uint8 public tokenDecimals;
     uint256 public rate; // Ensure this rate considers the desired conversion accurately
     uint256 public start;
     uint256 public end;
     uint256 public totalETHCollected;
-    bool public saleActive;
-    uint8 public tokenDecimals;
-
+    
     // Metrics
     mapping(address => uint256) public tokensPurchased;
 
