@@ -13,6 +13,17 @@ contract SaleFactory is Ownable {
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
+    /*
+          uint64 _startTime,
+        uint64 _endTime,
+        uint8 _liquidityPortion,
+        uint256 _saleRate, 
+        uint256 _listingRate,
+        uint256 _hardCap,
+        uint256 _softCap,
+        uint256 _maxBuy,
+        uint256 _minBuy*/
+
     // Function to create a new ETHTokenSale
     function createETHTokenSale(
         ERC20 saleToken,

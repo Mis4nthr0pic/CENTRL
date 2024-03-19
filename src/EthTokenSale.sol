@@ -30,6 +30,10 @@ contract ETHTokenSale is ReentrancyGuard, Ownable {
     //what information should be upgradable?
     //feed tokens into contract
     //should we control token balances internally
+    //do we need a mincap
+    //should we accept eth straight into the contract?
+    //set total tokens
+    //where do we control whitelist behaviour
 
     constructor(
         ERC20 _saleToken,
