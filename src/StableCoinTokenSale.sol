@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -9,10 +9,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 //https://github.com/kirilradkov14/presale-contract/blob/main/contracts/Presale.sol
 
 abstract contract StablecoinTokenSale is ReentrancyGuard, Ownable {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
-    IERC20 public saleToken;
-    IERC20 public paymentToken;
+    ERC20 public saleToken;
+    ERC20 public paymentToken;
     uint256 public rate; // Number of tokens per payment token unit, considering decimals
     uint256 public start;
     uint256 public end;
@@ -23,8 +23,8 @@ abstract contract StablecoinTokenSale is ReentrancyGuard, Ownable {
     uint256 public totalTokensSold;
 
     constructor(
-        IERC20 _saleToken,
-        IERC20 _paymentToken,
+        ERC20 _saleToken,
+        ERC20 _paymentToken,
         uint256 _rate,
         uint256 _duration
     ) {
@@ -41,7 +41,7 @@ abstract contract StablecoinTokenSale is ReentrancyGuard, Ownable {
         require(block.timestamp >= start && block.timestamp <= end, "Sale period has ended");
         require(paymentTokenAmount > 0, "No payment token sent");
 
-        uint256 tokenAmount = paymentTokenAmount * rate / (10 ** IERC20Metadata(paymentToken).decimals()) * (10 ** IERC20Metadata(saleToken).decimals());
+        uint256 tokenAmount = paymentTokenAmount * rate / (10 ** paymentToken.decimals()) * (10 ** saleToken.decimals());
         tokensPurchased[msg.sender] += tokenAmount; // Update claimable amount
 
         paymentToken.safeTransferFrom(msg.sender, address(this), paymentTokenAmount);
@@ -65,7 +65,7 @@ abstract contract StablecoinTokenSale is ReentrancyGuard, Ownable {
     }
     
     // Generalized withdraw function for any ERC20 token
-    function withdrawTokens(IERC20 token) external onlyOwner {
+    function withdrawTokens(ERC20 token) external onlyOwner {
         uint256 balance = token.balanceOf(address(this));
         require(balance > 0, "No tokens to withdraw");
         token.safeTransfer(owner(), balance);
