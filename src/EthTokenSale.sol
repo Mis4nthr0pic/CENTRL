@@ -39,6 +39,7 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
     event SalePausedStatusChanged(bool newStatus);
     event TokensClaimed(address _sender, uint256 _amountToClaim);
 
+    //check this
     modifier saleIsActive() {
         require(
             saleActive && !paused && block.timestamp >= start && block.timestamp <= end, "Sale is not currently active"
