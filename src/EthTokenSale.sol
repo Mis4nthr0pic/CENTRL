@@ -101,7 +101,7 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
     function buyTokens() external payable nonReentrant saleIsActive {
         require(msg.value > 0, "No ETH sent");
 
-        uint256 tokensToTransfer = (msg.value * rate * (10 ** tokenDecimals)) / (10 ** 18);
+        uint256 tokensToTransfer = msg.value * rate * (10 ** tokenDecimals - 18)/ 10 ** 18;        
         require(totalTokensSold + tokensToTransfer <= hardcap, "Purchase would exceed hardcap");
 
         // Check if adding this purchase would still respect the total ETH collected limit (if you're using a limit like hardcap for ETH)
@@ -132,7 +132,7 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
         // so we divide the number of tokens by the rate to find the ETH spent.
         // Adjust the formula based on how 'rate' is defined and consider decimals.
         // Assuming tokenDecimals, rate, and tokensToRefund are already defined appropriately
-        uint256 ethToRefund = (tokensToRefund * (10 ** 18)) / (rate * (10 ** tokenDecimals));
+        uint256 ethToRefund = tokensToRefund * (10 ** 18)) / (rate * 10**(tokenDecimals - 18));        
         require(ethToRefund <= address(this).balance, "Not enough ETH in contract");
 
         tokensPurchased[msg.sender] = 0; // Prevent re-entrancy
