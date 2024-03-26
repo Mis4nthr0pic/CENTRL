@@ -21,6 +21,8 @@ contract ETHTokenSale is Ownable, Whitelist {
     uint256 public totalTokensSold;
     uint256 public softcap;
     uint256 public hardcap;
+    uint256 public minPurchase;
+    uint256 public maxPurchase;
 
     // Metrics
     mapping(address => uint256) public tokensPurchased;
@@ -30,9 +32,12 @@ contract ETHTokenSale is Ownable, Whitelist {
     event RefundIssued(address indexed buyer, uint256 ethAmount);
     event SaleParametersUpdated(uint256 start, uint256 duration, uint256 softcap, uint256 hardcap, uint256 minPurchase, uint256 maxPurchase);
     event TokensInserted(uint256 amount);
+    event TokensClaimed(address indexed buyer, uint256 ethAmount);
     event SaleActiveStatusChanged(bool newStatus);
     event SalePausedStatusChanged(bool newStatus);
 
+
+    //WHAT?
     modifier saleIsActive() {
         require(saleActive && !paused && block.timestamp >= start && block.timestamp <= end, "Sale is not currently active");
         _;
@@ -48,7 +53,7 @@ contract ETHTokenSale is Ownable, Whitelist {
         uint256 _minPurchase,
         uint256 _maxPurchase,
         address _owner
-    ) Ownable() {
+    ) Ownable(msg.sender) {
         require(address(_saleToken) != address(0), "Sale token cannot be the zero address");
         require(_owner != address(0), "Owner cannot be the zero address");
         saleToken = _saleToken;
@@ -59,6 +64,7 @@ contract ETHTokenSale is Ownable, Whitelist {
         hardcap = _hardcap;
         minPurchase = _minPurchase;
         maxPurchase = _maxPurchase;
+        tokenDecimals = IERC20Metadata(address(_saleToken)).decimals();
         transferOwnership(_owner);
     }
 
@@ -82,8 +88,17 @@ contract ETHTokenSale is Ownable, Whitelist {
         saleToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
+    // This function allows the owner to add more tokens to the sale
+    // Useful in case the initial amount is sold out but the sale is still active
+    //what happens with hardcap?
+    function addMoreTokensToSale(uint256 amount) external onlyOwner {
+        require(amount > 0, "Amount must be positive");
+        saleToken.safeTransferFrom(owner(), address(this), amount);
+        emit TokensInserted(amount);
+    }
+
    // Assuming `saleIsActive` is a modifier that checks both `saleActive` and `!paused`.
-    function buyTokens() external payable nonReentrant saleIsActive {
+    function buyTokens() external payable  saleIsActive {
         require(msg.value > 0, "No ETH sent");
         
         uint256 tokensToTransfer = (msg.value * rate) / (10**18) * (10**tokenDecimals);
@@ -106,7 +121,7 @@ contract ETHTokenSale is Ownable, Whitelist {
     }
 
    //CHECK GOOD
-   function refund() external nonReentrant {
+   function refund() external  {
         require(!saleActive, "Sale is still active");
         require(totalETHCollected < softcap, "Softcap reached, refunds not available");
 
@@ -126,12 +141,12 @@ contract ETHTokenSale is Ownable, Whitelist {
         require(success, "ETH refund failed");
     }
 
-    function claimTokens() external nonReentrant {
+    function claimTokens() external  {
         uint256 amountToClaim = tokensPurchased[msg.sender];
         require(amountToClaim > 0, "No tokens to claim");
 
         // It's a good practice to clear the user's claimable tokens before the transfer
-        // to prevent a reentrancy attack even though we're using nonReentrant modifier.
+        // to prevent a reentrancy attack even though we're using  modifier.
         tokensPurchased[msg.sender] = 0;
 
         // Attempt to transfer tokens to the msg.sender.
@@ -140,13 +155,6 @@ contract ETHTokenSale is Ownable, Whitelist {
 
         // Emit an event after a successful transfer.
         emit TokensClaimed(msg.sender, amountToClaim);
-    }
-
-    function withdrawUnsoldTokens() external onlyOwner nonReentrant {
-        require(block.timestamp > end, "Sale has not ended yet");
-        uint256 unsoldTokens = saleToken.balanceOf(address(this)) - totalTokensSold;
-        require(unsoldTokens > 0, "No unsold tokens to withdraw");
-        saleToken.safeTransfer(owner(), unsoldTokens);
     }
 
     // Function to update the rate of the token sale
@@ -169,12 +177,16 @@ contract ETHTokenSale is Ownable, Whitelist {
         token.safeTransfer(owner(), balance);
     }
 
-    // This function allows the owner to add more tokens to the sale
-    // Useful in case the initial amount is sold out but the sale is still active
-    function addMoreTokensToSale(uint256 amount) external onlyOwner {
-        require(amount > 0, "Amount must be positive");
-        saleToken.safeTransferFrom(owner(), address(this), amount);
-        emit TokensInserted(amount);
+    function withdrawUnsoldTokens() external onlyOwner  {
+        require(block.timestamp > end, "Sale has not ended yet");
+        uint256 unsoldTokens = saleToken.balanceOf(address(this)) - totalTokensSold;
+        require(unsoldTokens > 0, "No unsold tokens to withdraw");
+        saleToken.safeTransfer(owner(), unsoldTokens);
+    }
+
+    //create a function to see the remaing tokens to be bought based on eth in the contract
+    function remainingTokens() external view returns (uint256) {
+        return saleToken.balanceOf(address(this));
     }
 
     // Allows the owner to update the sale's start and end times
@@ -187,15 +199,10 @@ contract ETHTokenSale is Ownable, Whitelist {
     }
 
     // Function for the owner to withdraw collected ETH after the sale
-    function withdrawCollectsedETH() external onlyOwner nonReentrant {
+    function withdrawCollectsedETH() external onlyOwner  {
         uint256 amount = address(this).balance;
         (bool success, ) = owner().call{value: amount}("");
         require(success, "Failed to send Ether");
-    }
-
-    //create a function to see the remaing tokens to be bought based on eth in the contract
-    function remainingTokens() external view returns (uint256) {
-        return saleToken.balanceOf(address(this));
     }
 
     // Ensuring proper handling of token decimals for refunds and purchases
@@ -226,7 +233,7 @@ contract ETHTokenSale is Ownable, Whitelist {
 
 /*
     // Allows withdrawal of ETH in case of sale failure or after reaching the softcap
-    function withdrawCollectedETH() external onlyOwner nonReentrant {
+    function withdrawCollectedETH() external onlyOwner  {
         require(saleActive == false, "Sale must be concluded");
         require(totalETHCollected >= softcap, "Cannot withdraw before reaching softcap or if sale is active");
 
