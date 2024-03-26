@@ -120,6 +120,7 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
         emit TokensPurchased(msg.sender, msg.value, tokensToTransfer);
     }
 
+   
     //CHECK GOOD
     function refund() external nonReentrant {
         require(!saleActive, "Sale is still active");
@@ -142,7 +143,10 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
         require(success, "ETH refund failed");
     }
 
+    //admin withdraws eth, before releasing claim or refunds (gotta be careful here, people can only get tokens after admin gets eth)
+    //ONLY after end & release clain function
     function claimTokens() external nonReentrant {
+        require(!saleActive, "Sale is still active");
         uint256 amountToClaim = tokensPurchased[msg.sender];
         require(amountToClaim > 0, "No tokens to claim");
 
@@ -203,7 +207,7 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
     }
 
     // Function for the owner to withdraw collected ETH after the sale
-    function withdrawCollectsedETH() external onlyOwner nonReentrant {
+    function withdrawCollectedETH() external onlyOwner nonReentrant {
         uint256 amount = address(this).balance;
         (bool success,) = owner().call{value: amount}("");
         require(success, "Failed to send Ether");
