@@ -122,6 +122,7 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
 
    
     //CHECK GOOD
+    //update total tokens sold and total eth collected
     function refund() external nonReentrant {
         require(!saleActive, "Sale is still active");
         require(totalETHCollected < softcap, "Softcap reached, refunds not available");
@@ -137,6 +138,9 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
         require(ethToRefund <= address(this).balance, "Not enough ETH in contract");
 
         tokensPurchased[msg.sender] = 0; // Prevent re-entrancy
+        //update total tokens sold and total eth collected
+        totalTokensSold -= tokensToRefund;
+        totalETHCollected -= ethToRefund;
 
         // Refund ETH to msg.sender
         (bool success,) = msg.sender.call{value: ethToRefund}("");
@@ -144,9 +148,16 @@ contract ETHTokenSale is Ownable, Whitelist, ReentrancyGuard {
     }
 
     //admin withdraws eth, before releasing claim or refunds (gotta be careful here, people can only get tokens after admin gets eth)
+    
+
+    //CHECK
     //ONLY after end & release clain function
+    //claim tokens only if softcap reached
+    //claim tokens of claim is released
     function claimTokens() external nonReentrant {
         require(!saleActive, "Sale is still active");
+        require(totalETHCollected > softcap, "Softcap not reached, claiming not available");
+
         uint256 amountToClaim = tokensPurchased[msg.sender];
         require(amountToClaim > 0, "No tokens to claim");
 
