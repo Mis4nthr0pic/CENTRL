@@ -59,22 +59,6 @@ contract ETHTokenSale is Ownable, Whitelist {
     error SaleNotEnded();
     error InvalidDuration();
 
-    error SaleNotPaused();
-    error SaleIsPaused();
-    error SaleHasEnded();
-    error SaleNotStarted();
-    error SaleHasStarted();
-    error InvalidRate();
-    error InvalidAmount();
-    error InvalidMinPurchase();
-    error InvalidMaxPurchase();
-    error InvalidToken();
-    error InvalidOwner();
-    error InvalidAddress();
-    error InvalidValue();
-    error InsufficientETH();
-    error InsufficientRate();
-
     modifier saleIsActive() {
         if (
             !saleActive ||
