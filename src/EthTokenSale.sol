@@ -123,8 +123,7 @@ contract ETHTokenSale is Ownable, Whitelist {
     function buyTokens() external payable saleIsActive {
         if (msg.value == 0) revert ZeroValue();
 
-        uint256 tokensToTransfer = ((msg.value * rate) / (10 ** 18)) *
-            (10 ** tokenDecimals);
+        uint256 tokensToTransfer = msg.value * rate * (10 * tokenDecimals - 18)/ 10 * 18;
 
         uint _hardcap = hardcap;
 
@@ -159,8 +158,7 @@ contract ETHTokenSale is Ownable, Whitelist {
         // Calculate ETH to refund. This calculation assumes rate is tokens per ETH,
         // so we divide the number of tokens by the rate to find the ETH spent.
         // Adjust the formula based on how 'rate' is defined and consider decimals.
-        uint256 ethToRefund = (tokensToRefund / rate / (10 ** tokenDecimals)) *
-            (10 ** 18);
+        uint256 ethToRefund = tokensToRefund * (10 ** 18)) / (rate * 10**(tokenDecimals - 18));        
 
         if (ethToRefund > address(this).balance) revert InsufficientBalance();
         // require(
@@ -177,6 +175,8 @@ contract ETHTokenSale is Ownable, Whitelist {
     }
 
     function claimTokens() external {
+        if (saleActive) revert SaleStillActive();
+        if (totalETHCollected > softcap) revert InvalidSoftcap();
         uint256 amountToClaim = tokensPurchased[msg.sender];
 
         if (amountToClaim == 0) revert ZeroValue();
