@@ -1,39 +1,62 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import './ETHTokenSale.sol'; 
+import "./EthTokenSale.sol";
 
 contract SaleFactory is Ownable {
     // Keeping a record of all sales
     address[] public allSales;
+    address immutable ETH_TOKEN_SALE;
 
     event SaleCreated(address indexed saleContract, string saleType);
 
-    constructor(address initialOwner) Ownable(initialOwner) {}
+    constructor(address initialOwner) Ownable(initialOwner) {
+        ETH_TOKEN_SALE = address(new ETHTokenSale());
+    }
 
     /*
-          uint64 _startTime,
-        uint64 _endTime,
-        uint8 _liquidityPortion,
-        uint256 _saleRate, 
-        uint256 _listingRate,
-        uint256 _hardCap,
-        uint256 _softCap,
-        uint256 _maxBuy,
-        uint256 _minBuy*/
+           ERC20 _saleToken,
+        uint256 _rate,
+        uint256 _start,
+        uint256 _duration,
+        uint256 _softcap,
+        uint256 _hardcap,
+        uint256 _minPurchase,
+        uint256 _maxPurchase,
+        address _owner
+        */
 
     // Function to create a new ETHTokenSale
     function createETHTokenSale(
         ERC20 saleToken,
         uint256 rate,
+        uint256 start,
         uint256 duration,
         uint256 softcap,
         uint256 hardcap,
+        uint256 minPurchase,
+        uint256 maxPurchase,
         address owner
     ) external onlyOwner {
-        ETHTokenSale newSale = new ETHTokenSale(saleToken, rate, duration, owner);
+        // ETHTokenSale newSale = new ETHTokenSale();
+
+        ETHTokenSale newSale = ETHTokenSale(
+            createClone(ETH_TOKEN_SALE, bytes32(0))
+        );
+
+        newSale.initialize(
+            saleToken,
+            rate,
+            start,
+            duration,
+            softcap,
+            hardcap,
+            minPurchase,
+            maxPurchase,
+            owner
+        );
         allSales.push(address(newSale));
         emit SaleCreated(address(newSale), "ETH");
     }
@@ -53,4 +76,24 @@ contract SaleFactory is Ownable {
     }
         */
     // Additional factory management functions as needed...
+
+    function createClone(
+        address target,
+        bytes32 salt
+    ) internal returns (address result) {
+        bytes20 targetBytes = bytes20(target);
+        assembly {
+            let clone := mload(0x40)
+            mstore(
+                clone,
+                0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
+            )
+            mstore(add(clone, 0x14), targetBytes)
+            mstore(
+                add(clone, 0x28),
+                0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
+            )
+            result := create2(callvalue(), clone, 0x37, salt)
+        }
+    }
 }

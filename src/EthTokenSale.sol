@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Whitelist.sol";
 
-contract ETHTokenSale is Ownable, Whitelist {
-    uint8 public immutable tokenDecimals;
+contract ETHTokenSale is Whitelist {
+    uint8 public tokenDecimals;
     using SafeERC20 for ERC20;
     ERC20 public saleToken;
     bool public saleActive;
@@ -73,7 +71,8 @@ contract ETHTokenSale is Ownable, Whitelist {
         _;
     }
 
-    constructor(
+
+    function initialize(
         ERC20 _saleToken,
         uint256 _rate,
         uint256 _start,
@@ -83,7 +82,8 @@ contract ETHTokenSale is Ownable, Whitelist {
         uint256 _minPurchase,
         uint256 _maxPurchase,
         address _owner
-    ) Ownable(_owner) {
+    ) external initializer {
+        OwnableUpgradeable.__Ownable_init(_owner);
         if (address(_saleToken) == address(0) || _owner == address(0))
             revert ZeroAddress();
         saleToken = _saleToken;
@@ -123,7 +123,7 @@ contract ETHTokenSale is Ownable, Whitelist {
     function buyTokens() external payable saleIsActive {
         if (msg.value == 0) revert ZeroValue();
 
-        uint256 tokensToTransfer = msg.value * rate * (10 * tokenDecimals - 18)/ 10 * 18;
+        uint256 tokensToTransfer = ((msg.value * rate * (10 * (tokenDecimals - 18))) / 10) * 18;
 
         uint _hardcap = hardcap;
 
@@ -132,7 +132,7 @@ contract ETHTokenSale is Ownable, Whitelist {
 
         // Check if adding this purchase would still respect the total ETH collected limit (if you're using a limit like hardcap for ETH)
 
-        if (totalETHCollected + msg.value > _hardcap) revert InvalidHardcap();
+        if (totalETHCollected + msg.value > _hardcap) revert('aff');// InvalidHardcap();
 
         tokensPurchased[msg.sender] += tokensToTransfer;
 
@@ -153,20 +153,17 @@ contract ETHTokenSale is Ownable, Whitelist {
         if (totalETHCollected < softcap) revert InvalidSoftcap();
 
         uint256 tokensToRefund = tokensPurchased[msg.sender];
-        if (tokensToRefund == 0) revert ZeroValue(); // if removed, reentrancy attack is possible
+        if (tokensToRefund == 0) revert ZeroValue();
 
         // Calculate ETH to refund. This calculation assumes rate is tokens per ETH,
         // so we divide the number of tokens by the rate to find the ETH spent.
         // Adjust the formula based on how 'rate' is defined and consider decimals.
-        uint256 ethToRefund = tokensToRefund * (10 ** 18)) / (rate * 10**(tokenDecimals - 18));        
+        uint256 ethToRefund = (tokensToRefund * (10 ** 18)) /
+            (rate * 10 ** (tokenDecimals - 18));
 
         if (ethToRefund > address(this).balance) revert InsufficientBalance();
-        // require(
-        //     ethToRefund <= address(this).balance,
-        //     "Not enough ETH in contract"
-        // );
 
-        tokensPurchased[msg.sender] = 0; // Prevent re-entrancy
+        tokensPurchased[msg.sender] = 0;
 
         // Refund ETH to msg.sender
 

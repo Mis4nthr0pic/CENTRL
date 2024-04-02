@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
-import {ETHTokenSale} from "../src/ETHTokenSale.sol";
+import {Test, console2} from "forge-std/Test.sol";
+import {ETHTokenSale} from "../src/EthTokenSale.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SaleToken} from "../src/SaleToken.sol";
@@ -34,11 +34,19 @@ contract ETHTokenSaleTest is Test {
     address u_two = address(2);
     address u_three = address(3);
     address u_four = address(4);
-
     function setUp() public {
-        saleToken = new SaleToken(address(this)); // owner will be test contract
-        tokenSale = new ETHTokenSale(
-            saleToken, rate, start, end, softcap, hardcap, minPurchase, maxPurchase, tokenDecimals, address(this)
+        saleToken = new SaleToken(owner); // owner will be test contract
+        tokenSale = new ETHTokenSale();
+        tokenSale.initialize(
+            saleToken,
+            rate,
+            start,
+            end,
+            softcap,
+            hardcap,
+            minPurchase,
+            maxPurchase,
+            owner
         );
 
         // initializing Mock address with balance
@@ -62,7 +70,7 @@ contract ETHTokenSaleTest is Test {
         vm.stopPrank();
 
         vm.prank(user);
-        tokenSale.buyTokens{value: 1 ether}();
+        tokenSale.buyTokens{value: 2 ether}();
 
         assert(tokenSale.totalTokensSold() == 2 ether);
         assert(tokenSale.totalETHCollected() == 1 ether);
